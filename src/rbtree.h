@@ -2,7 +2,7 @@
 #define RBTREE_H
 
 typedef struct rbtreeNode {
-    unsigned char isRed;
+    unsigned char color;
     struct rbtreeNode *parent;
     struct rbtreeNode *left;
     struct rbtreeNode *right;
@@ -41,11 +41,13 @@ int rbtreeStringComparator(rbtree *tree, const void *firstKey, const void *secon
 
 void *rbtreeFind(rbtree *tree, const void *key);
 void *rbtreeInsert(rbtree *tree, void *insert);
+void rbtreeDelete(rbtree *tree, void *del);
 
 #if RBTREE_DEBUG
 typedef int (*rbtreeKeyToIntConverter)(const void *key);
 void rbtreePrint(rbtree *tree, rbtreeKeyToIntConverter converter);
 int rbtreeDumpToArray(rbtree *tree, rbtreeKeyToIntConverter converter, int *array, int maxNum);
+int rbtreeVerify(rbtree *tree);
 #endif
 
 #endif

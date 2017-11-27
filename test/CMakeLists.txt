@@ -26,9 +26,19 @@ add_executable(test-insert-random-10000
     ${RBTREE_SOURCE}
     test-insert-random-10000.c
 )
+add_executable(test-delete-from-one
+    ${RBTREE_SOURCE}
+    test-delete-from-one.c
+)
+add_executable(test-delete-random-10000
+    ${RBTREE_SOURCE}
+    test-delete-random-10000.c
+)
 add_definitions(-DRBTREE_DEBUG)
 add_test(test-insert-to-empty test-insert-to-empty)
 add_test(test-insert-to-one test-insert-to-one)
 add_test(test-insert-left-right-case test-insert-left-right-case)
 add_test(test-insert-right-left-case test-insert-right-left-case)
 add_test(test-insert-random-10000 test-insert-random-10000)
+add_test(test-delete-from-one test-delete-from-one)
+add_test(test-delete-random-10000 test-delete-random-10000)

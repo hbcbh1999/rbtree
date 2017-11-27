@@ -12,60 +12,47 @@ static int keyToInt(const void *key) {
 
 int main(int argc, char *argv[]) {
     rbtree t;
-    node firstNode;
-    node secondNode;
-    node thirdNode;
-    node fourthNode;
-    node fifthNode;
-    node *find;
-    int firstNum = 10;
-    int secondNum = 5;
-    int thirdNum = 9;
-    int fourthNum = 4;
-    int fifthNum = 3;
-
     rbtreeInit(&t, node, node_, key, rbtreeIntComparator);
-
-    firstNode.key = firstNum;
-    rbtreeInsert(&t, &firstNode);
-    
-    printf("After insert first num:\n");
-    rbtreePrint(&t, keyToInt);
-    printf("\n");
-
-    secondNode.key = secondNum;
-    rbtreeInsert(&t, &secondNode);
-    
-    printf("After insert second num:\n");
-    rbtreePrint(&t, keyToInt);
-    printf("\n");
-
-    thirdNode.key = thirdNum;
-    rbtreeInsert(&t, &thirdNode);
-    
-    printf("After insert third num:\n");
-    rbtreePrint(&t, keyToInt);
-    printf("\n");
-
-    fourthNode.key = fourthNum;
-    rbtreeInsert(&t, &fourthNode);
-    
-    printf("After insert fourth num:\n");
-    rbtreePrint(&t, keyToInt);
-    printf("\n");
-
-    fifthNode.key = fifthNum; 
-    rbtreeInsert(&t, &fifthNode);
-    
-    printf("After insert fifth num:\n");
-    rbtreePrint(&t, keyToInt);
-    printf("\n");
-
-    find = (node *)rbtreeFind(&t, &fourthNum);
-    if (find) {
-        printf("found(%d)!\n", find->key);
-    } else {
-        printf("not found!\n");
+    printf("Usage: \n"
+        "   enter positive integer to add;\n"
+        "   enter nagative integer to remove the positive;\n"
+        "   enter q to quit;\n"
+        "   enter p to print rbtree.\n");
+    for (;;) {
+        char enter[1024];
+        node *n = 0;
+        printf(">");
+        scanf("%s", enter);
+        if (0 == strcmp(enter, "q")) {
+            break;
+        } else if (0 == strcmp(enter, "p")) {
+            rbtreePrint(&t, keyToInt);
+        } else {
+            int integer = atoi(enter);
+            if (integer > 0) {
+                printf("Add \"%d\" ", integer);
+                n = (node *)calloc(1, sizeof(node));
+                n->key = integer;
+                if (n == rbtreeInsert(&t, n)) {
+                    printf(" succeed.\n");
+                } else {
+                    free(n);
+                    printf(" failed.\n");
+                }
+            } else {
+                integer = abs(integer);
+                printf("Remove \"%d\"", integer);
+                n = rbtreeFind(&t, &integer);
+                if (n) {
+                    rbtreeDelete(&t, n);
+                    free(n);
+                    printf(" done.\n");
+                } else {
+                    printf(" failed(not found).\n");
+                }
+            }
+        }
     }
+    printf("exit\n");
     return 0;
 }

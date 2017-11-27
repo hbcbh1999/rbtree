@@ -29,6 +29,11 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    if (0 != rbtreeVerify(&t)) {
+        fprintf(stderr, "Verify failed.\n");
+        return -1;
+    }
+
     if (&firstNode != rbtreeFind(&t, &firstNum)) {
         fprintf(stderr, "Find key failed after insertion.\n");
         return -1;
@@ -47,6 +52,11 @@ int main(int argc, char *argv[]) {
     secondNode.key = secondNum;
     if (&secondNode != rbtreeInsert(&t, &secondNode)) {
         fprintf(stderr, "Insert second key failed.\n");
+        return -1;
+    }
+
+    if (0 != rbtreeVerify(&t)) {
+        fprintf(stderr, "Verify failed.\n");
         return -1;
     }
 
@@ -78,6 +88,11 @@ int main(int argc, char *argv[]) {
     thirdNode.key = thirdNum;
     if (&thirdNode != rbtreeInsert(&t, &thirdNode)) {
         fprintf(stderr, "Insert third key failed.\n");
+        return -1;
+    }
+
+    if (0 != rbtreeVerify(&t)) {
+        fprintf(stderr, "Verify failed.\n");
         return -1;
     }
 

@@ -4,7 +4,10 @@ Test
 --------
 ```
 cd test
-cmake ./
+mkdir build
+cd build
+cmake ../
+make
 ctest --verbose
 ```
 

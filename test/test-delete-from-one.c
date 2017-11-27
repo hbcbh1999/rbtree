@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     node firstNode;
     node *find;
     int firstNum = 10;
-    int array[1] = {0};
+    int array[2] = {0};
 
     rbtreeInit(&t, node, node_, key, rbtreeIntComparator);
 
@@ -42,6 +42,18 @@ int main(int argc, char *argv[]) {
 
     if (10 != array[0]) {
         fprintf(stderr, "Found incorrect value.\n");
+        return -1;
+    }
+
+    rbtreeDelete(&t, &firstNode);
+
+    if (0 != rbtreeVerify(&t)) {
+        fprintf(stderr, "Verify failed.\n");
+        return -1;
+    }
+
+    if (0 != rbtreeFind(&t, &firstNum)) {
+        fprintf(stderr, "Value is still there after delete.\n");
         return -1;
     }
 

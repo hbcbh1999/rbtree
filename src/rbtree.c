@@ -50,10 +50,21 @@ rbtreeNode *rbtreeSearch(rbtree *tree, const void *key, rbtreeNode **lastNode, i
     return node;
 }
 
+#define RED     1
+#define BLACK   0
+
+#define isRed(node)     ((node) && RED == (node)->color)
+#define isBlack(node)   (!isRed(node))
+#define markBlack(node) (node)->color = BLACK
+#define markRed(node)   (node)->color = RED
+
+#define isRightChild(node)  ((node)->parent->right == (node))
+#define sibling(node)       (((node) && (node)->parent) ? ((node)->parent->left == (node) ? (node)->parent->right : (node)->parent->left) : 0)
+
 #define swapColors(firstNode, secondNode) do {  \
-    unsigned char tmp = (firstNode)->isRed;     \
-    (firstNode)->isRed = (secondNode)->isRed;   \
-    (secondNode)->isRed = tmp;                  \
+    unsigned char tmp = (firstNode)->color;     \
+    (firstNode)->color = (secondNode)->color;   \
+    (secondNode)->color = tmp;                  \
 } while (0)
 
 #define replaceChild(tree, child, newChild) do {    \
@@ -72,7 +83,7 @@ rbtreeNode *rbtreeSearch(rbtree *tree, const void *key, rbtreeNode **lastNode, i
     }                               \
 } while (0)
 
-static void leftRotate(rbtree *tree, rbtreeNode *node) {
+static void rotateLeft(rbtree *tree, rbtreeNode *node) {
     rbtreeNode *newParent = node->right;
     rbtreeNode *oldLeft = newParent->left;
     newParent->left = node;
@@ -86,7 +97,7 @@ static void leftRotate(rbtree *tree, rbtreeNode *node) {
     updateRoot(tree, newParent);
 }
 
-static void rightRotate(rbtree *tree, rbtreeNode *node) {
+static void rotateRight(rbtree *tree, rbtreeNode *node) {
     rbtreeNode *newParent = node->left;
     rbtreeNode *oldRight = newParent->right;
     newParent->right = node;
@@ -107,32 +118,32 @@ static void fixInsert(rbtree *tree, rbtreeNode *current) {
         rbtreeNode *grandParentNode;
         parentNode = current->parent;
         if (!parentNode) {
-            current->isRed = 0;
+            markBlack(current);
             break;
         }
-        if (!parentNode->isRed) {
+        if (isBlack(parentNode)) {
             break;
         }
         grandParentNode = parentNode->parent;
-        uncleNode = parentNode == grandParentNode->left ? grandParentNode->right : grandParentNode->left;
-        if (uncleNode && uncleNode->isRed) {
-            parentNode->isRed = 0;
-            uncleNode->isRed = 0;
-            uncleNode->parent->isRed = 1;
+        uncleNode = sibling(parentNode);
+        if (isRed(uncleNode)) {
+            markBlack(parentNode);
+            markBlack(uncleNode);
+            markRed(uncleNode->parent);
             current = uncleNode->parent;
             continue;
         } else {
             if (parentNode == parentNode->parent->left) {
                 if (current == parentNode->right) {
-                    leftRotate(tree, parentNode);
+                    rotateLeft(tree, parentNode);
                 }
-                rightRotate(tree, grandParentNode);
+                rotateRight(tree, grandParentNode);
                 swapColors(grandParentNode, grandParentNode->parent);
             } else {
                 if (current == parentNode->left) {
-                    rightRotate(tree, parentNode);
+                    rotateRight(tree, parentNode);
                 }
-                leftRotate(tree, grandParentNode);
+                rotateLeft(tree, grandParentNode);
                 swapColors(grandParentNode, grandParentNode->parent);
             }
         }
@@ -156,13 +167,13 @@ rbtreeNode *rbtreeInsertNode(rbtree *tree, rbtreeNode *insert) {
     insert->left = 0;
     insert->right = 0;
     if (!lastNode) {
-        insert->isRed = 0;
+        markBlack(insert);
         insert->parent = 0;
         tree->root = insert;
         return insert;
     }
     insert->parent = lastNode;
-    insert->isRed = 1;
+    markRed(insert);
     if (lastCmp < 0) {
         lastNode->left = insert;
     } else {
@@ -170,6 +181,141 @@ rbtreeNode *rbtreeInsertNode(rbtree *tree, rbtreeNode *insert) {
     }
     fixInsert(tree, insert);
     return insert;
+}
+
+void rbtreeFixDelete(rbtree *tree, rbtreeNode *fix, unsigned char replacedColor, rbtreeNode *sib) {
+    rbtreeNode *parent;
+    for (;;) {
+        if (isRed(fix) || RED == replacedColor) {
+            markBlack(fix);
+            break;
+        }
+        if (tree->root == fix) {
+            markBlack(fix);
+            break;
+        }
+        if (isRed(sib)) {
+            if (isRightChild(sib)) {
+                parent = sib->parent;
+                rotateLeft(tree, parent);
+                swapColors(parent, parent->parent);
+                replacedColor = BLACK;
+                fix = parent->left;
+                sib = parent->right;
+            } else {
+                parent = sib->parent;
+                rotateRight(tree, parent);
+                swapColors(parent, parent->parent);
+                replacedColor = BLACK;
+                fix = parent->right;
+                sib = parent->left;
+            }
+            continue;
+        }
+        if (!sib) {
+            break;
+        }
+        if (isRed(sib->left) || isRed(sib->right)) {
+            if (isRightChild(sib)) {
+                if (isRed(sib->left)) {
+                    rotateRight(tree, sib);
+                    swapColors(sib, sib->parent);
+                    sib = sib->parent;
+                    parent = sib->parent;
+                } else {
+                    parent = sib->parent;
+                }
+                rotateLeft(tree, parent);
+                swapColors(sib, parent);
+                markBlack(sib->right);
+            } else {
+                if (isRed(sib->right)) {
+                    rotateLeft(tree, sib);
+                    swapColors(sib, sib->parent);
+                    sib = sib->parent;
+                    parent = sib->parent;
+                } else {
+                    parent = sib->parent;
+                }
+                rotateRight(tree, parent);
+                swapColors(sib, parent);
+                markBlack(sib->left);
+            }
+            break;
+        }
+        markRed(sib);
+        if (isRed(sib->parent)) {
+            markBlack(sib->parent);
+            break;
+        }
+        fix = sib->parent;
+        replacedColor = BLACK;
+        sib = sibling(fix);
+    }
+}
+
+static rbtreeNode *successor(rbtreeNode *node) {
+    rbtreeNode *search = node->right;
+    while (search->left) {
+        search = search->left;
+    }
+    return search;
+}
+
+static void copyNode(rbtree *tree, rbtreeNode *from, rbtreeNode *to) {
+    replaceChild(tree, to, from);
+    from->parent = to->parent;
+    from->left = to->left;
+    if (to->left) {
+        to->left->parent = from;
+    }
+    from->right = to->right;
+    if (to->right) {
+        to->right->parent = from;
+    }
+    updateRoot(tree, from);
+}
+
+static void moveNode(rbtree *tree, rbtreeNode *from, rbtreeNode *to) {
+    replaceChild(tree, from, 0);
+    copyNode(tree, from, to);
+}
+
+void rbtreeDeleteNode(rbtree *tree, rbtreeNode *del) {
+    rbtreeNode *rep;
+    rbtreeNode *sib;
+    unsigned char replacedColor = BLACK;
+    if (del->left && del->right) {
+        rep = successor(del);
+        if (rep->right) {
+            rbtreeNode *newRep = rep->right;
+            replacedColor = rep->color;
+            sib = sibling(rep);
+            moveNode(tree, newRep, rep);
+            copyNode(tree, rep, del);
+            rep->color = del->color;
+            rep = newRep;
+        } else {
+            sib = sibling(rep);
+            moveNode(tree, rep, del);
+            rep->color = del->color;
+            rep = 0;
+        }
+    } else if ((rep = del->left ? del->left : del->right)) {
+        sib = sibling(del);
+        moveNode(tree, rep, del);
+        replacedColor = del->color;
+    } else {
+        sib = sibling(del);
+        if (del->parent) {
+            replaceChild(tree, del, 0);
+        } else {
+            tree->root = 0;
+            return;
+        }
+        rep = del;
+    }
+    rbtreeFixDelete(tree, rep, replacedColor, sib);
 }
 
 void *rbtreeFind(rbtree *tree, const void *key) {
@@ -188,20 +334,26 @@ void *rbtreeInsert(rbtree *tree, void *insert) {
     return (void *)((char *)node - tree->nodeOffsetOfParent);
 }
 
+void rbtreeDelete(rbtree *tree, void *del) {
+    rbtreeDeleteNode(tree, (rbtreeNode *)((char *)del + tree->nodeOffsetOfParent));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 #if RBTREE_DEBUG
 
 static void printNode(rbtree *tree, rbtreeNode *node, rbtreeKeyToIntConverter converter) {
-    if (!node || (!node->left && !node->right)) {
+    if (!node || (tree->root != node && !node->left && !node->right)) {
         return;
     }
     if (node->left) {
-        printf("(%d:%c)", converter(keyOfNode(tree, node->left)), node->left->isRed ? 'R' : 'B');
+        printf("(%d:%c)", converter(keyOfNode(tree, node->left)), isRed(node->left) ? 'R' : 'B');
     } else {
         printf("NULL");
     }
-    printf(" <- (%d:%c) -> ", converter(keyOfNode(tree, node)), node->isRed ? 'R' : 'B');
+    printf(" <- (%d:%c) -> ", converter(keyOfNode(tree, node)), isRed(node) ? 'R' : 'B');
     if (node->right) {
-        printf("(%d:%c)", converter(keyOfNode(tree, node->right)), node->right->isRed ? 'R' : 'B');
+        printf("(%d:%c)", converter(keyOfNode(tree, node->right)), isRed(node->right) ? 'R' : 'B');
     } else {
         printf("NULL");
     }
@@ -244,4 +396,58 @@ int rbtreeDumpToArray(rbtree *tree, rbtreeKeyToIntConverter converter, int *arra
     return num;
 }
 
+static int checkConsectiveRedNodes(rbtreeNode *node) {
+    if (!node) {
+        return 0;
+    }
+    if (isRed(node) && isRed(node->parent)) {
+        return -1;
+    }
+    if (0 != checkConsectiveRedNodes(node->left)) {
+        return -1;
+    }
+    if (0 != checkConsectiveRedNodes(node->right)) {
+        return -1;
+    }
+    return 0;
+}
+
+static int checkBlackNodesToLeaf(rbtreeNode *node, int blackNodes, int *cmp) {
+    if (!node) {
+        if (-1 == *cmp) {
+            *cmp = blackNodes;
+        }
+        if (*cmp != blackNodes) {
+            return -1;
+        }
+        return 0;
+    }
+    if (isBlack(node)) {
+        blackNodes++;
+    }
+    if (0 != checkBlackNodesToLeaf(node->left, blackNodes, cmp)) {
+        return -1;
+    }
+    if (0 != checkBlackNodesToLeaf(node->right, blackNodes, cmp)) {
+        return -1;
+    }
+    return 0;
+}
+
+int rbtreeVerify(rbtree *tree) {
+    int blackNodeNumber = -1;
+    if (isRed(tree->root)) {
+        fprintf(stderr, "Root node is not black\n");
+        return -1;
+    }
+    if (0 != checkConsectiveRedNodes(tree->root)) {
+        fprintf(stderr, "Found consective red nodes\n");
+        return -1;
+    }
+    if (0 != checkBlackNodesToLeaf(tree->root, 0, &blackNodeNumber)) {
+        fprintf(stderr, "Black nodes number incorrect\n");
+        return -1;
+    }
+    return 0;
+ }
 #endif

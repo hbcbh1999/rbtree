@@ -37,6 +37,10 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Insert key([%d]:%d) failed.\n", i, numbers[i]);
             return -1;
         }
+        if (0 != rbtreeVerify(&t)) {
+            fprintf(stderr, "Verify failed.\n");
+            return -1;
+        }
         //printf("After insert key([%d]:%d):\n", i, numbers[i]);
         //rbtreePrint(&t, keyToInt);
         //printf("\n");
