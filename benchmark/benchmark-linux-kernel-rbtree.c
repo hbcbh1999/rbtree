@@ -76,14 +76,14 @@ int main(int argc, char *argv[]) {
         my_insert(&mytree, &nodes[i]);
     }
     getrusage(RUSAGE_SELF, &end);
-    printf("linux,insert,%d,%ld\n", GEN_NUM, begin.ru_utime.tv_sec * 100000 + begin.ru_utime.tv_usec);
+    printf("linux,insert,%d,%ldus\n", GEN_NUM, begin.ru_utime.tv_sec * 1000000 + begin.ru_utime.tv_usec);
 
     getrusage(RUSAGE_SELF, &begin);
     for (i = 0; i < GEN_NUM; ++i) {
         my_search(&mytree, nodes[i].key);
     }
     getrusage(RUSAGE_SELF, &end);
-    printf("linux,search,%d,%ld\n", GEN_NUM, begin.ru_utime.tv_sec * 100000 + begin.ru_utime.tv_usec);
+    printf("linux,search,%d,%ldus\n", GEN_NUM, begin.ru_utime.tv_sec * 1000000 + begin.ru_utime.tv_usec);
 
     getrusage(RUSAGE_SELF, &begin);
     for (i = 0; i < GEN_NUM; ++i) {
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
         }
     }
     getrusage(RUSAGE_SELF, &end);
-    printf("linux,delete,%d,%ld\n", GEN_NUM, begin.ru_utime.tv_sec * 100000 + begin.ru_utime.tv_usec);
+    printf("linux,delete,%d,%ldus\n", GEN_NUM, begin.ru_utime.tv_sec * 1000000 + begin.ru_utime.tv_usec);
 
     return 0;
 }
