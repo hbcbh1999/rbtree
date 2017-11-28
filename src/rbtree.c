@@ -1,3 +1,18 @@
+/* Copyright (c) huxingyi@msn.com 2017 All rights reserved.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <string.h>
 #include <stdio.h>
 #include "rbtree.h"
@@ -157,33 +172,33 @@ rbtreeNode *rbtreeFindNode(rbtree *tree, const void *key) {
     return rbtreeSearch(tree, key, &lastNode, &lastCmp);
 }
 
-rbtreeNode *rbtreeInsertNode(rbtree *tree, rbtreeNode *insert) {
+rbtreeNode *rbtreeInsertNode(rbtree *tree, rbtreeNode *node) {
     rbtreeNode *lastNode = 0;
     int lastCmp = 0;
-    rbtreeNode *existing = rbtreeSearch(tree, keyOfNode(tree, insert), &lastNode, &lastCmp);
+    rbtreeNode *existing = rbtreeSearch(tree, keyOfNode(tree, node), &lastNode, &lastCmp);
     if (existing) {
         return existing;
     }
-    insert->left = 0;
-    insert->right = 0;
+    node->left = 0;
+    node->right = 0;
     if (!lastNode) {
-        markBlack(insert);
-        insert->parent = 0;
-        tree->root = insert;
-        return insert;
+        markBlack(node);
+        node->parent = 0;
+        tree->root = node;
+        return node;
     }
-    insert->parent = lastNode;
-    markRed(insert);
+    node->parent = lastNode;
+    markRed(node);
     if (lastCmp < 0) {
-        lastNode->left = insert;
+        lastNode->left = node;
     } else {
-        lastNode->right = insert;
+        lastNode->right = node;
     }
-    fixInsert(tree, insert);
-    return insert;
+    fixInsert(tree, node);
+    return node;
 }
 
-void rbtreeFixDelete(rbtree *tree, rbtreeNode *fix, unsigned char replacedColor, rbtreeNode *sib) {
+static void rbtreeFixDelete(rbtree *tree, rbtreeNode *fix, unsigned char replacedColor, rbtreeNode *sib) {
     rbtreeNode *parent;
     for (;;) {
         if (isRed(fix) || RED == replacedColor) {
@@ -281,39 +296,39 @@ static void moveNode(rbtree *tree, rbtreeNode *from, rbtreeNode *to) {
     copyNode(tree, from, to);
 }
 
-void rbtreeDeleteNode(rbtree *tree, rbtreeNode *del) {
+void rbtreeDeleteNode(rbtree *tree, rbtreeNode *node) {
     rbtreeNode *rep;
     rbtreeNode *sib;
     unsigned char replacedColor = BLACK;
-    if (del->left && del->right) {
-        rep = successor(del);
+    if (node->left && node->right) {
+        rep = successor(node);
         if (rep->right) {
             rbtreeNode *newRep = rep->right;
             replacedColor = rep->color;
             sib = sibling(rep);
             moveNode(tree, newRep, rep);
-            copyNode(tree, rep, del);
-            rep->color = del->color;
+            copyNode(tree, rep, node);
+            rep->color = node->color;
             rep = newRep;
         } else {
             sib = sibling(rep);
-            moveNode(tree, rep, del);
-            rep->color = del->color;
+            moveNode(tree, rep, node);
+            rep->color = node->color;
             rep = 0;
         }
-    } else if ((rep = del->left ? del->left : del->right)) {
-        sib = sibling(del);
-        moveNode(tree, rep, del);
-        replacedColor = del->color;
+    } else if ((rep = node->left ? node->left : node->right)) {
+        sib = sibling(node);
+        moveNode(tree, rep, node);
+        replacedColor = node->color;
     } else {
-        sib = sibling(del);
-        if (del->parent) {
-            replaceChild(tree, del, 0);
+        sib = sibling(node);
+        if (node->parent) {
+            replaceChild(tree, node, 0);
         } else {
             tree->root = 0;
             return;
         }
-        rep = del;
+        rep = node;
     }
     rbtreeFixDelete(tree, rep, replacedColor, sib);
 }
@@ -326,16 +341,102 @@ void *rbtreeFind(rbtree *tree, const void *key) {
     return (void *)((char *)node - tree->nodeOffsetOfParent);
 }
 
-void *rbtreeInsert(rbtree *tree, void *insert) {
-    rbtreeNode *node = rbtreeInsertNode(tree, (rbtreeNode *)((char *)insert + tree->nodeOffsetOfParent));
+void *rbtreeInsert(rbtree *tree, void *current) {
+    rbtreeNode *node = rbtreeInsertNode(tree, (rbtreeNode *)((char *)current + tree->nodeOffsetOfParent));
     if (!node) {
         return 0;
     }
     return (void *)((char *)node - tree->nodeOffsetOfParent);
 }
 
-void rbtreeDelete(rbtree *tree, void *del) {
-    rbtreeDeleteNode(tree, (rbtreeNode *)((char *)del + tree->nodeOffsetOfParent));
+void rbtreeDelete(rbtree *tree, void *current) {
+    rbtreeDeleteNode(tree, (rbtreeNode *)((char *)current + tree->nodeOffsetOfParent));
+}
+
+rbtreeNode *rbtreeFirstNode(rbtree *tree) {
+    rbtreeNode *node;
+    if (!tree->root) {
+        return 0;
+    }
+    node = tree->root;
+    while (node->left) {
+        node = node->left;
+    }
+    return node;
+}
+
+rbtreeNode *rbtreeLastNode(rbtree *tree) {
+    rbtreeNode *node;
+    if (!tree->root) {
+        return 0;
+    }
+    node = tree->root;
+    while (node->right) {
+        node = node->right;
+    }
+    return node;
+}
+
+rbtreeNode *rbtreeNextNode(rbtreeNode *node) {
+    rbtreeNode *parent;
+    if (node->right) {
+        node = node->right;
+        while (node->left) {
+            node = node->left;
+        }
+        return node;
+    }
+    while ((parent=node->parent) && isRightChild(node)) {
+        node = parent;
+    }
+    return parent;
+}
+
+rbtreeNode *rbtreePreviousNode(rbtreeNode *node) {
+    rbtreeNode *parent;
+    if (node->left) {
+        node = node->left;
+        while (node->right) {
+            node = node->right;
+        }
+        return node;
+    }
+    while ((parent=node->parent) && !isRightChild(node)) {
+        node = parent;
+    }
+    return parent;
+}
+
+void *rbtreeFirst(rbtree *tree) {
+    rbtreeNode *node = rbtreeFirstNode(tree);
+    if (!node) {
+        return 0;
+    }
+    return (void *)((char *)node - tree->nodeOffsetOfParent);
+}
+
+void *rbtreeLast(rbtree *tree) {
+    rbtreeNode *node = rbtreeLastNode(tree);
+    if (!node) {
+        return 0;
+    }
+    return (void *)((char *)node - tree->nodeOffsetOfParent);
+}
+
+void *rbtreeNext(rbtree *tree, void *current) {
+    rbtreeNode *node = rbtreeNextNode((rbtreeNode *)((char *)current + tree->nodeOffsetOfParent));
+    if (!node) {
+        return 0;
+    }
+    return (void *)((char *)node - tree->nodeOffsetOfParent);
+}
+
+void *rbtreePrevious(rbtree *tree, void *current) {
+    rbtreeNode *node = rbtreePreviousNode((rbtreeNode *)((char *)current + tree->nodeOffsetOfParent));
+    if (!node) {
+        return 0;
+    }
+    return (void *)((char *)node - tree->nodeOffsetOfParent);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
