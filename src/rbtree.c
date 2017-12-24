@@ -49,7 +49,7 @@ int rbtreeStringComparator(rbtree *tree, const void *firstKey, const void *secon
 }
 
 int rbtreePointerComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
-    return memcmp(((void **)firstKey)[0], ((void **)secondKey)[0], sizeof(void *));
+    return memcmp(&((void **)firstKey)[0], &((void **)secondKey)[0], sizeof(void *));
 }
 
 rbtreeNode *rbtreeSearch(rbtree *tree, const void *key, rbtreeNode **lastNode, int *lastCmp) {
